@@ -1,4 +1,6 @@
+from django.http import HttpRequest, HttpResponseNotFound
 from django.shortcuts import render
+
 
 DATA = {
     'omlet': {
@@ -28,3 +30,17 @@ DATA = {
 #     'ингредиент2': количество2,
 #   }
 # }
+
+
+def recipe(request: HttpRequest, recipe: str):
+    if not recipe in DATA:
+        return HttpResponseNotFound(f'Recipe {recipe} not found')
+    
+    servings = int(request.GET.get('servings', '1'))
+    recipe_item = DATA[recipe]
+    ingredients = { k: v * servings for k,v in recipe_item.items() }
+
+    context = {
+        'recipe': ingredients,
+    }
+    return render(request, 'calculator/index.html', context)
