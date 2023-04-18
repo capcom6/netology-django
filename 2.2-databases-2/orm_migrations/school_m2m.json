@@ -1,0 +1,61 @@
+[
+    {
+        "model": "school.student",
+        "pk": 1,
+        "fields": {
+            "name": "Бабаева Вера Ивановна",
+            "group": "8А",
+            "teachers": [
+                3
+            ]
+        }
+    },
+    {
+        "model": "school.student",
+        "pk": 2,
+        "fields": {
+            "name": "Погорелов Денис Витальевич",
+            "group": "8А",
+            "teachers": [
+                2,
+                3
+            ]
+        }
+    },
+    {
+        "model": "school.student",
+        "pk": 3,
+        "fields": {
+            "name": "Осипов Иван Вячеславович",
+            "group": "8Б",
+            "teachers": [
+                1,
+                2
+            ]
+        }
+    },
+    {
+        "model": "school.teacher",
+        "pk": 1,
+        "fields": {
+            "name": "Карякин Владимир Владимирович",
+            "subject": "Математика"
+        }
+    },
+    {
+        "model": "school.teacher",
+        "pk": 2,
+        "fields": {
+            "name": "Наумкин Анатолий Андреевич",
+            "subject": "Рус яз"
+        }
+    },
+    {
+        "model": "school.teacher",
+        "pk": 3,
+        "fields": {
+            "name": "Филатова Елена Александровна",
+            "subject": "Физика"
+        }
+    }
+]
