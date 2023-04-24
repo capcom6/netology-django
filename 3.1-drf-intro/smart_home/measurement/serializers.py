@@ -1,4 +1,5 @@
-from rest_framework import serializers
+import base64
+from rest_framework import serializers, fields
 
 from .models import Measure, Sensor
 
@@ -11,9 +12,13 @@ class SensorSerializer(serializers.ModelSerializer):
 
 
 class MeasureSerializer(serializers.ModelSerializer):
+    photo = fields.ImageField(
+        required=False, max_length=None, allow_empty_file=True, use_url=True
+    )
+
     class Meta:
         model = Measure
-        fields = ["sensor", "temperature", "created_at"]
+        fields = ["sensor", "temperature", "created_at", "photo"]
 
 
 class SensorDetailsSerializer(serializers.ModelSerializer):

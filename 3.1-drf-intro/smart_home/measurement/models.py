@@ -26,6 +26,7 @@ class Measure(models.Model):
     created_at = models.DateTimeField(
         _("Date and time"), auto_now=False, auto_now_add=True
     )
+    photo = models.ImageField(_("Photo"), upload_to="photos/%Y/%m/%d/", null=True)
 
     class Meta:
         verbose_name = _("Measure")
