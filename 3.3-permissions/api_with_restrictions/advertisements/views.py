@@ -52,5 +52,5 @@ class AdvertisementViewSet(viewsets.ModelViewSet):
         if self.action in ["create"]:
             return [permissions.IsAuthenticated()]
         if self.action in ["update", "partial_update", "destroy"]:
-            return [IsAdvertisementCreator()]
+            return [permissions.OR(IsAdvertisementCreator(), permissions.IsAdminUser())]
         return []
