@@ -1,5 +1,6 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AnonymousUser
 from django_filters import rest_framework as filters
+from django.db.models import Q
 from rest_framework import permissions, viewsets, response, status
 from rest_framework.decorators import action
 
@@ -11,7 +12,12 @@ from .serializers import AdvertisementSerializer
 
 class IsAdvertisementCreator(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        if request.method in permissions.SAFE_METHODS:
+        return obj.creator == request.user
+
+
+class IsDraftCreatorOrAllow(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if obj.status != AdvertisementStatusChoices.DRAFT:
             return True
 
         return obj.creator == request.user
@@ -20,10 +26,17 @@ class IsAdvertisementCreator(permissions.BasePermission):
 class AdvertisementViewSet(viewsets.ModelViewSet):
     """ViewSet для объявлений."""
 
-    queryset = Advertisement.objects.all()
+    queryset = Advertisement.objects
     serializer_class = AdvertisementSerializer
     filter_backends = [filters.DjangoFilterBackend]
     filterset_class = AdvertisementFilter
+
+    def get_queryset(self):
+        where = ~Q(status="DRAFT")  # не показваем черновики
+        if not isinstance(self.request.user, AnonymousUser):
+            where |= Q(creator=self.request.user)  # за исключением его создателя
+
+        return self.queryset.filter(where)
 
     def create(self, request, *args, **kwargs):
         self._check_limit(request.user)
@@ -32,7 +45,8 @@ class AdvertisementViewSet(viewsets.ModelViewSet):
     def update(self, request, pk=None, *args, **kwargs):
         # при редактировании мы можем открывать ранее закрытые объявления
         # потому нужна проверка лимита и тут
-        self._check_limit(request.user, pk)
+        if request.data.get(status) == AdvertisementStatusChoices.OPEN:
+            self._check_limit(request.user, pk)
         return super().update(request, pk, *args, **kwargs)
 
     @action(methods=["GET"], detail=False)
@@ -80,7 +94,6 @@ class AdvertisementViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         """Получение прав для действий."""
-        print(self.action)
         if self.action.endswith("favorites"):
             return [permissions.IsAuthenticated()]
 
@@ -88,4 +101,4 @@ class AdvertisementViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated()]
         if self.action in ["update", "partial_update", "destroy"]:
             return [permissions.OR(IsAdvertisementCreator(), permissions.IsAdminUser())]
-        return []
+        return [IsDraftCreatorOrAllow()]

@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.db import models
-from django.core import exceptions
 
 
 class AdvertisementStatusChoices(models.TextChoices):
@@ -8,6 +7,7 @@ class AdvertisementStatusChoices(models.TextChoices):
 
     OPEN = "OPEN", "Открыто"
     CLOSED = "CLOSED", "Закрыто"
+    DRAFT = "DRAFT", "Черновик"
 
 
 class Advertisement(models.Model):

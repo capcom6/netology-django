@@ -6,6 +6,8 @@
 # получение объявлений
 GET {{baseUrl}}/advertisements/
 Content-Type: application/json
+Authorization: Token {{token}}
+
 
 ###
 
@@ -22,12 +24,12 @@ Authorization: Token {{token}}
 ###
 
 # попытка поменять объявление
-PATCH {{baseUrl}}/advertisements/1/
+PATCH {{baseUrl}}/advertisements/6/
 Content-Type: application/json
 Authorization: Token {{token}}
 
 {
-  "status": "CLOSED"
+  "status": "DRAFT"
 }
 
 ###
