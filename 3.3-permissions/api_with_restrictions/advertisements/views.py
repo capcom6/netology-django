@@ -1,26 +1,14 @@
-from django.contrib.auth.models import User, AnonymousUser
-from django_filters import rest_framework as filters
+from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
-from rest_framework import permissions, viewsets, response, status
+from django_filters import rest_framework as filters
+from rest_framework import permissions, response, status, viewsets
 from rest_framework.decorators import action
 
 from .exceptions import OpenAdvertisementsLimitException, SelfFavoriteException
 from .filters import AdvertisementFilter
 from .models import Advertisement, AdvertisementStatusChoices, Favorite
+from .permissions import IsAdvertisementCreator, IsDraftCreatorOrAllow
 from .serializers import AdvertisementSerializer
-
-
-class IsAdvertisementCreator(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj):
-        return obj.creator == request.user
-
-
-class IsDraftCreatorOrAllow(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj):
-        if obj.status != AdvertisementStatusChoices.DRAFT:
-            return True
-
-        return obj.creator == request.user
 
 
 class AdvertisementViewSet(viewsets.ModelViewSet):
@@ -33,7 +21,7 @@ class AdvertisementViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         where = ~Q(status="DRAFT")  # не показваем черновики
-        if not isinstance(self.request.user, AnonymousUser):
+        if self.request.user.is_authenticated:
             where |= Q(creator=self.request.user)  # за исключением его создателя
 
         return self.queryset.filter(where)
@@ -64,7 +52,7 @@ class AdvertisementViewSet(viewsets.ModelViewSet):
             user=request.user, advertisement=self.get_object()
         )
         if request.method == "POST":
-            if favorite:
+            if favorite.exists():
                 return response.Response(status=status.HTTP_204_NO_CONTENT)
 
             if request.user == self.get_object().creator:
@@ -74,7 +62,7 @@ class AdvertisementViewSet(viewsets.ModelViewSet):
 
             return response.Response(status=status.HTTP_201_CREATED)
         if request.method == "DELETE":
-            if favorite:
+            if favorite.exists():
                 favorite.delete()
 
             return response.Response(status=status.HTTP_204_NO_CONTENT)
@@ -94,7 +82,7 @@ class AdvertisementViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         """Получение прав для действий."""
-        if self.action.endswith("favorites"):
+        if self.action in ["favorites", "edit_favorites"]:
             return [permissions.IsAuthenticated()]
 
         if self.action in ["create"]:

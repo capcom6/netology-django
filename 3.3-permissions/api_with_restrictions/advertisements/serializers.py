@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
-from django.http import HttpRequest
-from rest_framework import serializers, exceptions
+from rest_framework import exceptions, serializers, request
 
+from .exceptions import OpenAdvertisementsLimitException
 from .models import Advertisement, AdvertisementStatusChoices
 
 
@@ -50,4 +50,11 @@ class AdvertisementSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         """Метод для валидации. Вызывается при создании и обновлении."""
+        # С моей точки зрения помещать сюда проверку количества открытых объявлений некорректно
+        # поскольку это по сути своей не валидация входящих данных, а бизнес-логика
+        # Дополнительно к этому сериализатор может использовать не только в контексте создания/редактирования объявлений,
+        # но и в других запросах, где проверка по кол-ву открытых объявлений лишняя
+        # Плюс для корректной проверки кол-ва объявлений надо знать, происходит ли создание нового объявление или редактирование существующего.
+        # При редактировании нам надо исключить из подсчета редактируемое объявление, но в рамках данного метода реализация будет не очевидной
+        # Если опустить все эти моменты, то проверка будет "тупой" не позволяя отредактировать открытое объявление при наличии 10 открытых
         return data
