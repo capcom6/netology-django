@@ -3,6 +3,7 @@ import random
 import pytest
 from django.urls import reverse
 from model_bakery import baker
+from rest_framework import status
 from rest_framework.test import APIClient
 
 from students.models import Course, Student
@@ -35,7 +36,7 @@ def test_courses_retrieve(api_client, course_factory):
     url = reverse("courses-detail", kwargs={"pk": course.id})
 
     resp = api_client.get(url)
-    assert resp.status_code == 200
+    assert resp.status_code == status.HTTP_200_OK
 
     data = resp.json()
     assert_course(data, course)
@@ -47,7 +48,7 @@ def test_courses_list(api_client, course_factory):
     url = reverse("courses-list")
 
     resp = api_client.get(url)
-    assert resp.status_code == 200
+    assert resp.status_code == status.HTTP_200_OK
 
     data = resp.json()
     assert len(data) == len(courses)
@@ -63,7 +64,7 @@ def test_courses_list_filter_by_id(api_client, course_factory):
     url = reverse("courses-list")
 
     resp = api_client.get(url, data={"id": course.id})
-    assert resp.status_code == 200
+    assert resp.status_code == status.HTTP_200_OK
 
     data = resp.json()
     assert len(data) == 1
@@ -78,7 +79,7 @@ def test_courses_list_filter_by_name(api_client, course_factory):
     url = reverse("courses-list")
 
     resp = api_client.get(url, data={"name": course.name})
-    assert resp.status_code == 200
+    assert resp.status_code == status.HTTP_200_OK
 
     data = resp.json()
     assert len(data) == 1
@@ -93,7 +94,7 @@ def test_courses_create(api_client):
     url = reverse("courses-list")
 
     response = api_client.post(url, data=data)
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
 
     assert Course.objects.count() == courses_count + 1
 
@@ -105,7 +106,7 @@ def test_courses_update(api_client, course_factory):
     url = reverse("courses-detail", kwargs={"pk": course.id})
 
     response = api_client.patch(url, data=data)
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     patched_course = Course.objects.get(pk=course.pk)
     assert patched_course.name == data["name"]
@@ -118,9 +119,33 @@ def test_courses_delete(api_client, course_factory):
     url = reverse("courses-detail", kwargs={"pk": course.id})
 
     response = api_client.delete(url)
-    assert response.status_code == 204
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
     assert Course.objects.count() == len(courses) - 1
+
+
+@pytest.mark.parametrize(
+    ["limit", "status_code"],
+    [
+        (1, status.HTTP_400_BAD_REQUEST),
+        (2, status.HTTP_201_CREATED),
+        (3, status.HTTP_201_CREATED),
+    ],
+)
+@pytest.mark.django_db
+def test_courses_students_limit_failure(
+    api_client, student_factory, settings, limit, status_code
+):
+    settings.MAX_STUDENTS_PER_COURSE = limit
+    students = student_factory(_quantity=2)
+    data = {
+        "name": baker.random_gen.gen_string(36),
+        "students": [s.id for s in students],
+    }
+    url = reverse("courses-list")
+
+    response = api_client.post(url, data=data)
+    assert response.status_code == status_code
 
 
 def assert_course(data, course):
